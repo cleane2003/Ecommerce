@@ -1,4 +1,8 @@
 import { getCustomRepository } from 'typeorm';
+import Order from '../typeorm/entities/Order';
+import { OrdersRepository } from '../typeorm/repositories/OrdersRepository';
+import { CustomersRepository } from '@modules/customers/typeorm/repositories/CustomersRepository';
+import { ProductRepository } from '@modules/products/typeorm/repositories/ProductsRepository';
 
 interface IProduct {
   id: string;
@@ -7,28 +11,22 @@ interface IProduct {
 
 interface IRequest {
   customer_id: string;
-  price: number;
-  quantity: number;
+  products: IProduct[];
 }
 
 class CreateProductService {
-  public async execute({ name, price, quantity }: IRequest): Promise<Product> {
+  public async execute({ customer_id, products }: IRequest): Promise<Order> {
+    const ordersRepository = getCustomRepository(OrdersRepository);
+    const customersRepository = getCustomRepository(CustomersRepository);
     const productsRepository = getCustomRepository(ProductRepository);
-    const productExists = await productsRepository.findByName(name);
 
-    if (productExists) {
-      throw new Error('There is already one product with this name');
+    const customerExists = await customersRepository.findById(customer_id);
+
+    if (customerExists) {
+      throw new Error('Could not find any customer with the given id.');
     }
 
-    const product = productsRepository.create({
-      name,
-      price,
-      quantity,
-    });
-
-    await productsRepository.save(product);
-
-    return product;
+    const existsProducts = await productsRepository.findAllByIds(products);
   }
 }
 
